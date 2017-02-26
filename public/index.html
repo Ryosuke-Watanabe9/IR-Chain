@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>IR-Chain</title>
+<meta charset="utf-8">
+<!--ここから追加-->
+<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="js/ui_table.js"></script>
+<script type="text/javascript" src="js/get.js"></script>
+<!--ここまで追加-->
+</head>
+
+<body>
+	<!--ここから追加-->
+	<table id="dataTable" border="1">
+		<thead>
+			<tr>
+				<th>時間</th>
+				<th>項目</th>
+			</tr>
+		</thead>
+		<tbody id='tableItems'></tbody>
+	</table>
+	<br>
+	<br>
+
+	<div id="form">
+		<span>項目名: </span><span><input type="text" id="item1"></span><br>
+		<button value="追加" id="add">追加</button>
+		<button value="取得" id="get">取得</button>
+	</div>
+	<!--ここまで追加-->
+
+</body>
+
+</html>

@@ -1,9 +1,18 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/url"
+	"path"
 	"strconv"
+	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -54,51 +63,60 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	fmt.Printf("Running invoke")
 
-	var A, B string    // Entities
-	var Aval, Bval int // Asset holdings
-	var X int          // Transaction value
+	var sender, reciever string          // Entities
+	var senderAmount, recieverAmount int // Asset holdings
+	var X int                            // Transaction value
 	var err error
 
 	if len(args) != 3 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 3")
 	}
 
-	A = args[0]
-	B = args[1]
+	sender = args[0]
+	reciever = args[1]
+
+	isEnableSender := IsExistUser(sender)
+	isEnableReciever := IsExistUser(reciever)
+
+	if isEnableSender == false || isEnableReciever == false {
+		return nil, errors.New("No exsit user")
+	}
 
 	// Get the state from the ledger
 	// TODO: will be nice to have a GetAllState call to ledger
-	Avalbytes, err := stub.GetState(A)
+	senderAmountbytes, err := stub.GetState(sender)
 	if err != nil {
 		return nil, errors.New("Failed to get state")
 	}
-	if Avalbytes == nil {
-		return nil, errors.New("Entity not found")
+	if senderAmountbytes == nil {
+		senderAmount = 0
+	} else {
+		senderAmount, _ = strconv.Atoi(string(senderAmountbytes))
 	}
-	Aval, _ = strconv.Atoi(string(Avalbytes))
 
-	Bvalbytes, err := stub.GetState(B)
+	recieverAmountbytes, err := stub.GetState(reciever)
 	if err != nil {
 		return nil, errors.New("Failed to get state")
 	}
-	if Bvalbytes == nil {
-		return nil, errors.New("Entity not found")
+	if recieverAmountbytes == nil {
+		recieverAmount = 0
+	} else {
+		recieverAmount, _ = strconv.Atoi(string(recieverAmountbytes))
 	}
-	Bval, _ = strconv.Atoi(string(Bvalbytes))
 
 	// Perform the execution
 	X, err = strconv.Atoi(args[2])
-	Aval = Aval - X
-	Bval = Bval + X
-	fmt.Printf("Aval = %d, Bval = %d\n", Aval, Bval)
+	senderAmount = senderAmount - X
+	recieverAmount = recieverAmount + X
+	fmt.Printf("senderAmount = %d, recieverAmount = %d\n", senderAmount, recieverAmount)
 
 	// Write the state back to the ledger
-	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
+	err = stub.PutState(sender, []byte(strconv.Itoa(senderAmount)))
 	if err != nil {
 		return nil, err
 	}
 
-	err = stub.PutState(B, []byte(strconv.Itoa(Bval)))
+	err = stub.PutState(reciever, []byte(strconv.Itoa(recieverAmount)))
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +165,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	return nil, errors.New("Received unknown function invocation")
 }
 
-func (t* SimpleChaincode) Run(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Run(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Printf("Run called, passing through to Invoke (same function)")
 
 	// Handle different functions
@@ -199,6 +217,89 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	jsonResp := "{\"Name\":\"" + A + "\",\"Amount\":\"" + string(Avalbytes) + "\"}"
 	fmt.Printf("Query Response:%s\n", jsonResp)
 	return Avalbytes, nil
+}
+
+func IsExistUser(userId string) bool {
+	var client, _ = NewAPIClient("https://b23476f36d234c06aff5e3f1822e3c03-vp0.us.blockchain.ibm.com:5003/", "", "", nil)
+	ctx := context.Background()
+	registrarURL := "registrar/" + userId
+	var request, _ = client.NewRequest(ctx, "GET", registrarURL, nil)
+	var response, responseError = client.HTTPClient.Do(request)
+	if responseError != nil {
+		return
+	}
+	fmt.Println("response")
+	responseByteArray, _ := ioutil.ReadAll(response.Body)
+	defer response.Body.Close()
+	fmt.Println("unmarshal")
+	var registrarResult interface{}
+	unmarshalError := json.Unmarshal(responseByteArray, &registrarResult)
+	if unmarshalError != nil {
+		return
+	}
+	fmt.Printf("%+v\n", registrarResult)
+	convertResult := registrarResult.(map[string]interface{})["OK"]
+	var isExist bool = false
+	if convertResult != nil {
+		resultCode := convertResult.(string)
+		fmt.Println(resultCode)
+		isExist = true
+	} else {
+		fmt.Println("login error")
+	}
+
+	return isExist
+}
+
+type APIClient struct {
+	URL        *url.URL
+	HTTPClient *http.Client
+
+	Username, Password string
+	Logger             *log.Logger
+}
+
+func NewAPIClient(urlString, username, password string, logger *log.Logger) (*APIClient, error) {
+	fmt.Println("start Creating NewAPIClient")
+	parserdURL, err := url.ParseRequestURI(urlString)
+	if err != nil {
+		return nil, errors.New("faild to parse URL: " + urlString)
+	}
+	fmt.Println("URL OK.")
+
+	var discardLogger = log.New(ioutil.Discard, "", log.LstdFlags)
+	if logger == nil {
+		logger = discardLogger
+	}
+	fmt.Println("Logger OK.")
+	apiClient := APIClient{}
+	apiClient.Username = username
+	apiClient.Password = password
+	apiClient.URL = parserdURL
+	apiClient.Logger = logger
+	apiClient.HTTPClient = &http.Client{Timeout: time.Duration(10) * time.Second}
+	return &apiClient, nil
+}
+
+func (apiClient *APIClient) NewRequest(ctx context.Context, method, spath string, body io.Reader) (*http.Request, error) {
+	u := *apiClient.URL
+	u.Path = path.Join(apiClient.URL.Path, spath)
+
+	request, error := http.NewRequest(method, u.String(), body)
+	if error != nil {
+		return nil, error
+	}
+
+	request = request.WithContext(ctx)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json")
+	return request, nil
+}
+
+func DecodeBody(response *http.Response, out interface{}) error {
+	defer response.Body.Close()
+	decoder := json.NewDecoder(response.Body)
+	return decoder.Decode(out)
 }
 
 func main() {

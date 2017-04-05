@@ -214,7 +214,7 @@ func IsExistUser(userId string) bool {
 	var request, _ = client.NewRequest("GET", registrarURL, nil)
 	var response, responseError = client.HTTPClient.Do(request)
 	if responseError != nil {
-		return
+		return false
 	}
 	fmt.Println("response")
 	responseByteArray, _ := ioutil.ReadAll(response.Body)
@@ -223,7 +223,7 @@ func IsExistUser(userId string) bool {
 	var registrarResult interface{}
 	unmarshalError := json.Unmarshal(responseByteArray, &registrarResult)
 	if unmarshalError != nil {
-		return
+		return false
 	}
 	fmt.Printf("%+v\n", registrarResult)
 	convertResult := registrarResult.(map[string]interface{})["OK"]

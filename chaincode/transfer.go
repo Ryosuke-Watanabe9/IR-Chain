@@ -43,7 +43,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 			return nil, err
 		}
 
-		arrayIndex + 1
+//		arrayIndex + 1
 		
 	}
 	

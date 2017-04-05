@@ -23,14 +23,14 @@ type SimpleChaincode struct {
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Printf("Init called, initializing chaincode")
 
-	var initial_asset string //初期値
+	var initial_asset int //初期値
 	var tmp_user string //ユーザループ用一時変数
 	var err error
 	
-	initial_asset = 10000; //初期値セット
+	initial_asset = 10000 //初期値セット
 
 	// 配列が0のときはエラー
-	if len(args) = 0 {
+	if len(args) == 0 {
 		return nil, errors.New("no users in args.")
 	}
 

@@ -29,8 +29,8 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	
 	initial_asset = 10000;　//初期値セット
 
-	/* 配列が0のときはエラー */
-	if len(args) != 0 {
+	// 配列が0のときはエラー
+	if len(args) = 0 {
 		return nil, errors.New("no users in args.")
 	}
 

@@ -23,7 +23,7 @@ type SimpleChaincode struct {
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Printf("Init called, initializing chaincode")
 
-	var initial_asset int //初期値
+	var initial_asset string //初期値
 	var tmp_user string //ユーザループ用一時変数
 	var err error
 	

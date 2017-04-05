@@ -26,7 +26,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	var initial_asset int //初期値
 	var tmp_user string //ユーザループ用一時変数
 	var err error
-	
+
 	initial_asset = 10000 //初期値セット
 
 	// 配列が0のときはエラー
@@ -44,7 +44,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 		}
 
 	}
-	
+
 	return nil, nil
 }
 
@@ -210,9 +210,8 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 
 func IsExistUser(userId string) bool {
 	var client, _ = NewAPIClient("https://b23476f36d234c06aff5e3f1822e3c03-vp0.us.blockchain.ibm.com:5003/", "", "", nil)
-	ctx := context.Background()
 	registrarURL := "registrar/" + userId
-	var request, _ = client.NewRequest(ctx, "GET", registrarURL, nil)
+	var request, _ = client.NewRequest("GET", registrarURL, nil)
 	var response, responseError = client.HTTPClient.Do(request)
 	if responseError != nil {
 		return
@@ -270,7 +269,7 @@ func NewAPIClient(urlString, username, password string, logger *log.Logger) (*AP
 	return &apiClient, nil
 }
 
-func (apiClient *APIClient) NewRequest(ctx context.Context, method, spath string, body io.Reader) (*http.Request, error) {
+func (apiClient *APIClient) NewRequest(method, spath string, body io.Reader) (*http.Request, error) {
 	u := *apiClient.URL
 	u.Path = path.Join(apiClient.URL.Path, spath)
 
@@ -279,7 +278,6 @@ func (apiClient *APIClient) NewRequest(ctx context.Context, method, spath string
 		return nil, error
 	}
 
-	request = request.WithContext(ctx)
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
 	return request, nil

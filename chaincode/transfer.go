@@ -38,7 +38,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	for arrayIndex, user := range args {
 
 		tmp_user = user
-		err = stub.PutState(tmp_user, []byte(initial_asset) // Write the state to the ledger
+		err = stub.PutState(tmp_user, []byte(initial_asset)) // Write the state to the ledger
 		if err != nil {
 			return nil, err
 		}

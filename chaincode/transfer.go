@@ -24,10 +24,10 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	fmt.Printf("Init called, initializing chaincode")
 
 	var initial_asset int //初期値
-	var tmp_user string　//ユーザループ用一時変数
+	var tmp_user string //ユーザループ用一時変数
 	var err error
 	
-	initial_asset = 10000;　//初期値セット
+	initial_asset = 10000; //初期値セット
 
 	// 配列が0のときはエラー
 	if len(args) = 0 {
@@ -38,7 +38,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	for arrayIndex, user := range args {
 
 		tmp_user = user
-		err = stub.PutState(tmp_user, []byte(initial_asset)　// Write the state to the ledger
+		err = stub.PutState(tmp_user, []byte(initial_asset) // Write the state to the ledger
 		if err != nil {
 			return nil, err
 		}

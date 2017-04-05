@@ -23,38 +23,30 @@ type SimpleChaincode struct {
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Printf("Init called, initializing chaincode")
 
-	var A, B string    // Entities
-	var Aval, Bval int // Asset holdings
+	var initial_asset int //初期値
+	var tmp_user string　//ユーザループ用一時変数
 	var err error
+	
+	initial_asset = 10000;　//初期値セット
 
-	if len(args) != 4 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 4")
+	/* 配列が0のときはエラー */
+	if len(args) != 0 {
+		return nil, errors.New("no users in args.")
 	}
 
-	// Initialize the chaincode
-	A = args[0]
-	Aval, err = strconv.Atoi(args[1])
-	if err != nil {
-		return nil, errors.New("Expecting integer value for asset holding")
-	}
-	B = args[2]
-	Bval, err = strconv.Atoi(args[3])
-	if err != nil {
-		return nil, errors.New("Expecting integer value for asset holding")
-	}
-	fmt.Printf("Aval = %d, Bval = %d\n", Aval, Bval)
+	//Initialize the chaincode
+	for arrayIndex, user := range args {
 
-	// Write the state to the ledger
-	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
-	if err != nil {
-		return nil, err
-	}
+		tmp_user = user
+		err = stub.PutState(tmp_user, []byte(initial_asset)　// Write the state to the ledger
+		if err != nil {
+			return nil, err
+		}
 
-	err = stub.PutState(B, []byte(strconv.Itoa(Bval)))
-	if err != nil {
-		return nil, err
+		arrayIndex + 1
+		
 	}
-
+	
 	return nil, nil
 }
 
@@ -220,8 +212,9 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 
 func IsExistUser(userId string) bool {
 	var client, _ = NewAPIClient("https://b23476f36d234c06aff5e3f1822e3c03-vp0.us.blockchain.ibm.com:5003/", "", "", nil)
+	ctx := context.Background()
 	registrarURL := "registrar/" + userId
-	var request, _ = client.NewRequest("GET", registrarURL, nil)
+	var request, _ = client.NewRequest(ctx, "GET", registrarURL, nil)
 	var response, responseError = client.HTTPClient.Do(request)
 	if responseError != nil {
 		return
@@ -279,7 +272,7 @@ func NewAPIClient(urlString, username, password string, logger *log.Logger) (*AP
 	return &apiClient, nil
 }
 
-func (apiClient *APIClient) NewRequest(method, spath string, body io.Reader) (*http.Request, error) {
+func (apiClient *APIClient) NewRequest(ctx context.Context, method, spath string, body io.Reader) (*http.Request, error) {
 	u := *apiClient.URL
 	u.Path = path.Join(apiClient.URL.Path, spath)
 
@@ -288,6 +281,7 @@ func (apiClient *APIClient) NewRequest(method, spath string, body io.Reader) (*h
 		return nil, error
 	}
 
+	request = request.WithContext(ctx)
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
 	return request, nil
